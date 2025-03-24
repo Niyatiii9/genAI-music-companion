@@ -1,22 +1,28 @@
-# Python cache
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-
 # Virtual environment
+venv/
+env/
+.venv/
 bin/
 include/
 lib/
 share/
 pyvenv.cfg
 
-# Generated files
-*.mid
-latest_generate*
+.DS_Store
+Thumbs.db
 
-# IDE and system files
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# IDE files
 .vscode/
 .idea/
 *.swp
 *.swo
+
+# Generated files
+*.mid
+latest_generate*
