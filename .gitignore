@@ -1,0 +1,22 @@
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Virtual environment
+bin/
+include/
+lib/
+share/
+pyvenv.cfg
+
+# Generated files
+*.mid
+latest_generate*
+
+# IDE and system files
+.vscode/
+.idea/
+*.swp
+*.swo
