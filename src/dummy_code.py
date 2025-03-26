@@ -9,3 +9,14 @@ def send_pitch_bend(value):
     lsb = bend_value & 0x7F  # Lower 7 bits
     msb = (bend_value >> 7) & 0x7F  # Upper 7 bits
     midi_out.send_message([0xE0, lsb, msb])  # Pitch Bend message
+
+
+# JSON code
+# {
+#     "serene": ["Yaman", "Bhupali", "Hansdhwani"],
+#     "devotional": ["Bhairav", "Bhairavi", "Todi"],
+#     "melancholic": ["Bhairavi", "Miyan Malhar", "Marwa"],
+#     "energetic": ["Bilawal", "Desh", "Kafi"],
+#     "romantic": ["Khamaj", "Pilu", "Madhuvanti"],
+#     "intense": ["Darbari Kanada", "Puriya", "Malkauns"]
+#   }
