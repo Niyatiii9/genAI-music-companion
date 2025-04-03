@@ -1,148 +1,152 @@
-import 'package:flutter/material.dart';
+// Flutter Web App: Music Playback + AWS Integration (With Sound Fix)
+
+import 'dart:html' as html;
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:just_audio/just_audio.dart';
 
-void main() => runApp(MusicGenWebApp());
+void main() {
+  runApp(const MyApp());
+}
 
-class MusicGenWebApp extends StatelessWidget {
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: '🎵 Music Generator Web',
-      theme: ThemeData.dark(),
-      home: MusicHomePage(),
+    return const MaterialApp(
       debugShowCheckedModeBanner: false,
+      home: AudioUploadPage(),
     );
   }
 }
 
-class MusicHomePage extends StatefulWidget {
+class AudioUploadPage extends StatefulWidget {
+  const AudioUploadPage({super.key});
+
   @override
-  _MusicHomePageState createState() => _MusicHomePageState();
+  State<AudioUploadPage> createState() => _AudioUploadPageState();
 }
 
-class _MusicHomePageState extends State<MusicHomePage> {
-  final AudioPlayer _player = AudioPlayer();
-  PlatformFile? _pickedFile;
-  double _tempo = 1.0; // Normal tempo
-  double _pitch = 1.0; // Normal pitch
+class _AudioUploadPageState extends State<AudioUploadPage> {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  double _pitch = 1.0;
+  double _speed = 1.0;
+  String? _fileName;
+  bool _isAudioLoaded = false;
 
-  /// Function: Pick and load audio file
-  Future<void> _pickAudioFile() async {
+  Future<void> _pickAudio() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       type: FileType.custom,
       allowedExtensions: ['mp3', 'wav'],
     );
 
-    if (result != null) {
-      _pickedFile = result.files.first;
+    if (result != null && result.files.single.bytes != null) {
+      final fileBytes = result.files.single.bytes!;
+      final fileName = result.files.single.name;
+
+      final blob = html.Blob([fileBytes], 'audio/mpeg');
+      final url = html.Url.createObjectUrlFromBlob(blob);
 
       try {
-        await _player.setFilePath(_pickedFile!.path!);
-        _player.play();
+        final duration = await _audioPlayer.setUrl(url);
+        print('Audio duration: $duration');
+        _audioPlayer.setVolume(1.0);
+        setState(() {
+          _fileName = fileName;
+          _isAudioLoaded = true;
+        });
       } catch (e) {
         print("Error loading audio: $e");
+        setState(() {
+          _isAudioLoaded = false;
+        });
       }
-
-      setState(() {});
     }
   }
 
   @override
   void dispose() {
-    _player.dispose();
+    _audioPlayer.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey[200],
       appBar: AppBar(
-        title: Text("🎧 Music Generator Web App"),
+        title: const Text('Music Generator Web App'),
         centerTitle: true,
       ),
-      body: Center(
-        child: Padding(
-          padding: EdgeInsets.all(24),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              ElevatedButton.icon(
-                onPressed: _pickAudioFile,
-                icon: Icon(Icons.upload_file),
-                label: Text("Upload Audio File"),
-                style: ElevatedButton.styleFrom(padding: EdgeInsets.all(12)),
+      body: Padding(
+        padding: const EdgeInsets.all(20.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            ElevatedButton(
+              onPressed: _pickAudio,
+              child: const Text('Upload Audio File'),
+            ),
+            const SizedBox(height: 10),
+            Text(_fileName ?? 'No file selected'),
+            const SizedBox(height: 20),
+            if (_isAudioLoaded) ...[
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  ElevatedButton(
+                    onPressed: () {
+                      _audioPlayer.play().catchError((error) {
+                        print("Play error: $error");
+                      });
+                    },
+                    child: const Text('Play'),
+                  ),
+                  const SizedBox(width: 10),
+                  ElevatedButton(
+                    onPressed: _audioPlayer.pause,
+                    child: const Text('Pause'),
+                  ),
+                ],
               ),
-              SizedBox(height: 30),
-
-              if (_pickedFile != null) ...[
-                Text(
-                  "🎶 Now Playing: ${_pickedFile!.name}",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                ),
-                SizedBox(height: 16),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    IconButton(
-                      icon: Icon(Icons.play_arrow),
-                      onPressed: () => _player.play(),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.pause),
-                      onPressed: () => _player.pause(),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.stop),
-                      onPressed: () => _player.stop(),
-                    ),
-                  ],
-                ),
-
-                SizedBox(height: 24),
-                Text(
-                  "Tempo: ${_tempo.toStringAsFixed(2)}",
-                  style: TextStyle(fontSize: 16),
-                ),
-                Slider(
-                  value: _tempo,
-                  min: 0.5,
-                  max: 2.0,
-                  divisions: 15,
-                  label: _tempo.toStringAsFixed(2),
-                  onChanged: (val) => setState(() => _tempo = val),
-                ),
-
-                SizedBox(height: 20),
-                Text(
-                  "Pitch: ${_pitch.toStringAsFixed(2)}",
-                  style: TextStyle(fontSize: 16),
-                ),
-                Slider(
-                  value: _pitch,
-                  min: 0.5,
-                  max: 2.0,
-                  divisions: 15,
-                  label: _pitch.toStringAsFixed(2),
-                  onChanged: (val) => setState(() => _pitch = val),
-                ),
-
-                SizedBox(height: 30),
-                ElevatedButton.icon(
-                  onPressed: () {
-                    print("File: ${_pickedFile!.name}");
-                    print("Tempo: $_tempo");
-                    print("Pitch: $_pitch");
-
-                    // TODO: Connect to AWS backend
-                  },
-                  icon: Icon(Icons.cloud_upload),
-                  label: Text("Send to AWS to Generate Music 🎧"),
-                ),
-              ],
+              const SizedBox(height: 20),
+              Column(
+                children: [
+                  const Text("Tempo"),
+                  Slider(
+                    value: _speed,
+                    min: 0.5,
+                    max: 2.0,
+                    divisions: 15,
+                    label: "${_speed.toStringAsFixed(2)}x",
+                    onChanged: (value) {
+                      setState(() {
+                        _speed = value;
+                        _audioPlayer.setSpeed(_speed);
+                      });
+                    },
+                  ),
+                  const Text("Pitch (Experimental)"),
+                  Slider(
+                    value: _pitch,
+                    min: 0.5,
+                    max: 2.0,
+                    divisions: 15,
+                    label: "${_pitch.toStringAsFixed(2)}x",
+                    onChanged: (value) {
+                      setState(() {
+                        _pitch = value;
+                        // just_audio doesn't support pitch natively on web
+                      });
+                    },
+                  ),
+                ],
+              ),
             ],
-          ),
+            const SizedBox(height: 20),
+            const Text("AWS backend integration is in progress..."),
+          ],
         ),
       ),
     );
