@@ -1,13 +1,13 @@
 import mido
 import random
 
-# Create a new MIDI file
+# Create a new MIDI file  
 mid = mido.MidiFile()
 track = mido.MidiTrack()
 mid.tracks.append(track)
 
 # Set tempo (120 BPM)
-track.append(mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(120)))
+track.append(mido.MetaMessage('set_tempo', tempo=mido.bpm2tempo(220)))
 
 # Notes in C major
 c_major_scale = [60,62,64,65,67,69,71]

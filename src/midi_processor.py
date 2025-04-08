@@ -1,6 +1,5 @@
 import mido
 
-
 midi_file = 'random_melody.mid'
 # Example function to adjust MIDI notes based on a raga
 def adjust_midi_to_raga(midi_file, raga_notes):

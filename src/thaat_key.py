@@ -14,7 +14,6 @@ def key(note_name):
         "F#4": 66, "G4": 67, "G#4": 68, "A4": 69, "A#4": 70, "B4": 71
     }
 
-    
     return midi_mapping[note_name]
 
 def scale(scale_name):
