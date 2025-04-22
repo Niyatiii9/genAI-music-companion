@@ -1,0 +1,99 @@
+import numpy as np
+import librosa
+
+def simple_extract_key_scale(y, sr):
+    """
+    A simple heuristic for key and scale detection based solely on the
+    average chroma vector.
+    
+    1. The tonic is chosen as the pitch class with the highest average energy.
+    2. The quality (Major/Minor) is determined by comparing the energy at the 
+       positions corresponding to a major third (tonic + 4 semitones) and a minor third (tonic + 3 semitones).
+    
+    Parameters:
+      y (np.ndarray): Audio time series.
+      sr (int): Sampling rate.
+      
+    Returns:
+      tonic (str): The estimated tonic (root note) from ['C', 'C#', 'D', ..., 'B'].
+      scale (str): "Major" or "Minor" based on the heuristic.
+    """
+    # Compute chroma features using a constant-Q transform (better frequency resolution for music)
+    chroma = librosa.feature.chroma_cqt(y=y, sr=sr)
+    # Average the chroma vector over time (one value per pitch class)
+    chroma_avg = np.mean(chroma, axis=1)
+    
+    # Define the list of pitch class names
+    keys = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+    
+    # Select the pitch class with maximum energy as the candidate tonic
+    tonic_index = np.argmax(chroma_avg)
+    tonic = keys[tonic_index]
+    
+    # Determine scale by comparing the energy of the major and minor third.
+    # In a major scale, the third note (major third) is at an interval of 4 semitones.
+    # In a minor scale, the third note (minor third) is at an interval of 3 semitones.
+    major_third_energy = chroma_avg[(tonic_index + 4) % 12]
+    minor_third_energy = chroma_avg[(tonic_index + 3) % 12]
+    
+    scale = "Major" if major_third_energy > minor_third_energy else "Minor"
+    
+    return tonic, scale
+
+def extract_tempo(y, sr):
+    """
+    Estimate the tempo (BPM) from the audio signal.
+    """
+    tempo, beat_frames = librosa.beat.beat_track(y=y, sr=sr)
+    return tempo, beat_frames
+
+def extract_time_signature(beat_frames, sr):
+    """
+    Heuristically estimate the time signature using the detected beat frames.
+    This example assumes a basic heuristic that typically a musical bar contains
+    four beats (i.e., 4/4 time), though more sophisticated methods can be used.
+    """
+    if len(beat_frames) > 1:
+        beat_times = librosa.frames_to_time(beat_frames, sr=sr)
+        beat_intervals = np.diff(beat_times)
+        avg_interval = np.median(beat_intervals)
+        # Assume a typical bar length and approximate the number of beats per bar.
+        beats_per_bar = round(4 / avg_interval) if avg_interval != 0 else 0
+        time_signature = f"{beats_per_bar}/4"
+    else:
+        time_signature = "Unknown"
+    
+    return time_signature
+
+def analyze_audio(file_path):
+    """
+    Analyze an audio file and extract key, scale, tempo, and time signature using separate logic for each.
+    """
+    y, sr = librosa.load(file_path)
+    
+    # Extract key and scale using the simple heuristic.
+    tonic, scale = simple_extract_key_scale(y, sr)
+    
+    # Extract tempo.
+    tempo, beat_frames = extract_tempo(y, sr)
+    
+    # Estimate time signature.
+    time_signature = extract_time_signature(beat_frames, sr)
+    
+    return {
+        'key': tonic,
+        'scale': scale,
+        'tempo': tempo,
+        'time_signature': time_signature
+    }
+
+if __name__ == "__main__":
+    # Replace with the path to the user-provided audio file.
+    file_path = "path/to/your/audiofile.wav"
+    
+    results = analyze_audio(file_path)
+    print("Audio Analysis Results:")
+    print("Key (Tonic):     ", results['key'])
+    print("Scale:           ", results['scale'])
+    print("Tempo (BPM):     ", results['tempo'])
+    print("Time Signature:  ", results['time_signature'])
